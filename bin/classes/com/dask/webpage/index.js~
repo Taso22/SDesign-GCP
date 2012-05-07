@@ -1,0 +1,74 @@
+/**
+ *
+ */
+var map;
+var coor;
+
+$(document).ready(function(){
+//    var latlng = new google.maps.LatLng(40.82012257801796, -73.94952464052199);
+    var latlng = new google.maps.LatLng(40.694149, -73.864227);
+
+    var myOptions = {
+        zoom: 17,
+        center: latlng,
+        mapTypeId: google.maps.MapTypeId.ROADMAP
+    };
+
+    map = new google.maps.Map(document.getElementById("map_canvas"), myOptions);
+
+    init_path();
+
+    google.maps.event.addListener(map, "click", function(event) {
+        alert(event.latLng.toString());
+		var marker = new google.maps.Marker({
+			position: event.latLng,
+			icon: "http://www.cespage.com/silverlight/appbar/dark/person.png",
+			title: event.latLng.toString(),
+			map: map
+		});
+	});
+
+});
+
+function init_path() {
+	var coor = new Array();
+
+//	coor.push(new google.maps.LatLng(40.82121460321003, -73.94793140836714));
+//	coor.push(new google.maps.LatLng(40.82147847277133, -73.94852149435042));
+//	coor.push(new google.maps.LatLng(40.82012257801796, -73.94952464052199));
+//	coor.push(new google.maps.LatLng(40.82005356466946, -73.9503561253166));
+
+	coor.push(new google.maps.LatLng(40.694149, -73.864227));
+	coor.push(new google.maps.LatLng(40.69418, -73.86409));
+	coor.push(new google.maps.LatLng(40.694839, -73.864319));
+	coor.push(new google.maps.LatLng(40.695518, -73.864563));
+	coor.push(new google.maps.LatLng(40.69569, -73.863693));
+	coor.push(new google.maps.LatLng(40.69598, -73.862427));
+	coor.push(new google.maps.LatLng(40.695572, -73.862213));
+	coor.push(new google.maps.LatLng(40.69511, -73.862022));
+	coor.push(new google.maps.LatLng(40.69492, -73.861938));
+	coor.push(new google.maps.LatLng(40.694389, -73.861732));
+	coor.push(new google.maps.LatLng(40.69426, -73.861679));
+	coor.push(new google.maps.LatLng(40.694321, -73.861382));
+
+    var black = "#333333";
+    var blue = "#1e90ff";
+    var color= "";
+    alert(coor.length);
+    for(var i=0; i<coor.length-1; i++) {
+	    if(i%2 == 0)
+	        color = black;
+        else
+            color = blue;
+
+        var temp = new Array(coor[i], coor[i+1]);
+
+        var path = new google.maps.Polyline({
+            path: temp,
+            strokeColor:color,
+            strokeOpacity: 2.0,
+            strokeWeight: 2
+        });
+        path.setMap(map);
+    }
+}
