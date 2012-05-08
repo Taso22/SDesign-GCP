@@ -38,15 +38,22 @@ public class FoundationActivity extends Activity {
 	String[] Intent_dest;
 	CMJson cmjson;
 	
+	private int initCounter = 0;
+	private long refreshS = 0;
+	private long refreshE = 0;
+	private long delay = 1000;
+	
 	private int naviS = 0;
 	private int GPSBearing = 0;
 	private int magneticBearing = 0;
 	
 	double mDistance;
-	int[] mBearing = new int[10];
+	int[] mBearingM = new int[10];
+	int[] mBearingG = new int[3];
 	
 	int mStepCount = 0;
 	int mMagnetCount = 0;
+	int mGPSCount = 0;
 	
 	SensorManager mSensorManager;
 	Sensor mSensor;
@@ -70,22 +77,29 @@ public class FoundationActivity extends Activity {
         		super.handleMessage(msg);
         		switch(msg.arg1){
         		case 0:
-        			//Log.i("handler","notified that sensor changed");
-//        			magneticBearing = compass.getMagDir();
-        			mBearing[mMagnetCount] = compass.getMagDir();
+        			mBearingM[mMagnetCount] = compass.getMagDir();
         			mMagnetCount++;
         			if(mMagnetCount == 10) {
         				mMagnetCount = 0;
         				magneticBearing = 0;
-        				for(int i=0; i<mBearing.length; i++)
-        					magneticBearing += mBearing[i];
-        				magneticBearing = magneticBearing/mBearing.length;
+        				for(int i=0; i<mBearingM.length; i++)
+        					magneticBearing += mBearingM[i];
+        				magneticBearing = magneticBearing/mBearingM.length;
+        				Log.i("handler","Notified that sensor changed, MAG: "+magneticBearing);
         				
         			}
         			break;
         		case 1:
-        			GPSBearing = compass.getGPSBearing();
-        			//Log.i("handler","notified that location changed");
+        			mBearingG[mGPSCount] = compass.getGPSBearing();
+        			mGPSCount++;
+        			if(mGPSCount == 10) {
+        				mGPSCount = 0;
+        				GPSBearing = 0;
+        				for(int i=0; i<mBearingG.length; i++)
+        					GPSBearing += mBearingG[i];
+        				GPSBearing = GPSBearing/mBearingG.length;
+        				Log.i("handler","Notified that location changed, GPS: "+GPSBearing);
+        			}
         			break;
         		}
         	}
@@ -112,25 +126,138 @@ public class FoundationActivity extends Activity {
         mDistanceNotifier.setDistance(mDistance = 0); 
         mStepDetector.addStepListener(mDistanceNotifier);
             
-        debugger();
-//        LM.requestLocationUpdates(LocationManager.GPS_PROVIDER,0,0,listen2GPS);
-        
-//        try {
-//			String[] Intent_start = { "40.821371", "-73.947851" };
-//			String[] Intent_dest =  { "40.820041", "-73.950302" };
-//			CMJson cmjson = CMManager.getDirections(Intent_start, Intent_dest, "foot", "js", "Pent");
-//			System.out.println(Arrays.toString(Intent_dest));
-//			Navigation navi = new Navigation(cmjson, new double[] {
-//					Double.parseDouble(Intent_dest[0]),
-//					Double.parseDouble(Intent_dest[1])
-//	        navi.debugger();
-//		} catch (IOException e) { e.printStackTrace(); }
-//        
-//        System.out.println(cmj.toString());
-//        System.out.println(Arrays.deepToString(navi.geometry.toArray()));
-        
-        
-        
+//        debugger();
+        LM.requestLocationUpdates(LocationManager.GPS_PROVIDER,0,0,listen2GPS);
+    }
+
+    LocationListener listen2GPS = new LocationListener() {
+		public void onStatusChanged(String provider, int status, Bundle extras) {}
+		public void onProviderEnabled(String provider) {}
+		public void onProviderDisabled(String provider) {}
+		public void onLocationChanged(Location location) {
+    		locChanged(location);
+    	}
+	};
+    
+	public void locChanged(Location location) {
+		Log.d("listen2GPS", "Got Location w/" +
+				" mBearing: " + magneticBearing +
+				" mSteps: " + mStepCount);
+		
+		if(location != null) {
+			if(naviS == 0) {
+				if(initCounter < 10) {
+					initCounter++;
+					return;
+				}
+				try {
+					Log.d("listen2PGS", "Initializing Navigation");
+					naviS = 1;
+					
+					// Ideal 
+					Intent_start = new String[]{
+							"" + location.getLatitude(),
+							"" + location.getLongitude()};
+					
+					Log.d("listen2PGS", "Dest: "+Arrays.toString(Intent_dest));
+					
+					cmjson = CMManager.getDirections(
+							Intent_start, 
+							Intent_dest, 
+							"foot", "js", "Pent");
+					Log.d("listen2PGS", Arrays.deepToString(
+							cmjson.route_instructions.toArray()));
+					navi = new Navigation(cmjson, new double[] {
+							Double.parseDouble(Intent_dest[0]),
+							Double.parseDouble(Intent_dest[1])
+					});
+				} catch (IOException e) { e.printStackTrace(); }
+			}
+			else {
+				double[] pt = {
+						location.getLatitude(), 
+						location.getLongitude()};
+				String[] res = navi.Navigate(
+						pt, 
+						GPSBearing, 
+						mStepCount);
+				
+				Log.d("listen2PGS", Arrays.toString(res));
+				
+				refreshE = System.currentTimeMillis();
+				if(refreshS == 0 || (refreshE-refreshS) > delay) {
+					tview.setText(Arrays.toString(res));
+					refreshS = System.currentTimeMillis();
+					
+					if(res[1].startsWith("0.1"))
+						delay = 2000;
+					else
+						delay = 1000;
+				}
+				
+				if(res[0].startsWith("0.") == true) {
+					resetValues(null);
+					Log.d("listen2PGS", "Reseting values!");
+				}
+			}
+		}
+		else
+			Log.d("listen2PGS", "Location is null.");
+	}
+	
+    public void resetValues(View v) {
+    	mStepCount = 0;
+    	mDistanceNotifier.setDistance(mDistance = 0);
+    }
+    
+    /**
+     * Forwards distance values from DistanceNotifier to the activity. 
+     */
+    private Listener mDistanceListener = new Listener() {
+        public void valueChanged(double value) {
+            mDistance = value;
+//            tview.setText("Steps: "+(mStepCount++)+" \tDistance: "+mDistance+" meters.");
+        }
+    };
+    
+    private void registerDetector() {
+        mSensor = mSensorManager.getDefaultSensor(
+            Sensor.TYPE_ACCELEROMETER);
+        mSensorManager.registerListener(mStepDetector,
+            mSensor,
+            SensorManager.SENSOR_DELAY_FASTEST);
+    }
+    
+    @Override
+    protected void onResume() {
+    	super.onResume();
+    	compass.startMagneticCompass();
+    	compass.startGPSCompass();
+    }
+    
+    @Override
+    protected void onPause() {
+    	super.onPause();
+    	compass.stopMagneticCompass();
+    	compass.stopGPSCompass();
+    }
+    
+    public boolean onCreateOptionsMenu(Menu menu) {
+	    super.onCreateOptionsMenu(menu);
+	    MenuInflater inflater = getMenuInflater();
+	    inflater.inflate(R.menu.menu, menu);
+	    
+	    return true;
+    }
+
+    public boolean onOptionsItemSelected(MenuItem item) {
+		if(item.getItemId() == R.id.exit_title) {
+			finish();
+			System.exit(0);
+			
+			return true;
+		}
+		return false;
     }
     
     public void debugger() {
@@ -189,285 +316,5 @@ public class FoundationActivity extends Activity {
     		
     		locChanged(Loc);
     	}
-    	
-    	
-    }
-    
-
-    LocationListener listen2GPS = new LocationListener() {
-		public void onStatusChanged(String provider, int status, Bundle extras) {}
-		public void onProviderEnabled(String provider) {}
-		public void onProviderDisabled(String provider) {}
-		public void onLocationChanged(Location location) {
-    		Log.d("listen2GPS", "Got Location w/" +
-    				" mBearing: " + magneticBearing +
-    				" mSteps: " + mStepCount);
-    		
-			if(location != null) {
-    			if(naviS == 0) {
-    				try {
-    					Log.d("listen2PGS", "Initializing Navigation");
-    					naviS = 1;
-    					
-//    					// Ideal 
-//    					Intent_start = new String[]{
-//    							"" + location.getLatitude(),
-//    							"" + location.getLongitude()};
-    					
-    					Intent_start = new String[]{
-    							"40.821369", "-73.947859"}; // School
-//    							"40.694149", "-73.864227"}; // Home
-    					Intent_dest =  GCManager.geocodingGOOGLE(
-    							"1518 Amsterdam Avenue, New York, NY");
-//    							"85-41 Forest Parkway Woodhaven, NY 11421");
-    					
-    					cmjson = CMManager.getDirections(
-    							Intent_start, 
-    							Intent_dest, 
-    							"foot", "js", "Pent");
-    					Log.d("listen2PGS", Arrays.toString(
-    							cmjson.route_instructions.toArray()));
-    					navi = new Navigation(cmjson, new double[] {
-    							Double.parseDouble(Intent_dest[0]),
-    							Double.parseDouble(Intent_dest[1])
-    					});
-    				} catch (IOException e) { e.printStackTrace(); }
-    			}
-    			else {
-    				double[] pt = {
-    						location.getLatitude(), 
-    						location.getLongitude()};
-    				String[] res = navi.Navigate(
-    						pt, 
-    						magneticBearing, 
-    						mStepCount);
-    				
-    				Log.d("listen2PGS", Arrays.toString(res));
-    				tview.setText(Arrays.toString(res));
-    				
-    				if(res[0].startsWith("0.") == true) {
-    					resetValues(null);
-    					Log.d("listen2PGS", "Reseting values!");
-    				}
-    			}
-    		}
-    		else
-    			Log.d("listen2PGS", "Location is null.");
-    	}
-	};
-    
-	public void locChanged(Location location) {
-		Log.d("listen2GPS", "Got Location w/" +
-				" mBearing: " + magneticBearing +
-				" mSteps: " + mStepCount);
-		
-		if(location != null) {
-			if(naviS == 0) {
-				try {
-					Log.d("listen2PGS", "Initializing Navigation");
-					naviS = 1;
-					
-//					// Ideal 
-//					Intent_start = new String[]{
-//							"" + location.getLatitude(),
-//							"" + location.getLongitude()};
-					
-					Intent_start = new String[]{
-							"40.821369", "-73.947859"}; // School
-//							"40.694149", "-73.864227"}; // Home
-					Intent_dest =  GCManager.geocodingGOOGLE(
-							"3451 Broadway, New York, NY");
-//							"85-41 Forest Parkway Woodhaven, NY 11421");
-					
-					Log.d("listen2PGS", "Dest: "+Arrays.toString(Intent_dest));
-					
-					cmjson = CMManager.getDirections(
-							Intent_start, 
-							Intent_dest, 
-							"foot", "js", "Pent");
-					Log.d("listen2PGS", Arrays.deepToString(
-							cmjson.route_instructions.toArray()));
-					navi = new Navigation(cmjson, new double[] {
-							Double.parseDouble(Intent_dest[0]),
-							Double.parseDouble(Intent_dest[1])
-					});
-				} catch (IOException e) { e.printStackTrace(); }
-			}
-			else {
-				double[] pt = {
-						location.getLatitude(), 
-						location.getLongitude()};
-				String[] res = navi.Navigate(
-						pt, 
-						magneticBearing, 
-						mStepCount);
-				
-				Log.d("listen2PGS", Arrays.toString(res));
-				tview.setText(Arrays.toString(res));
-				
-				if(res[0].startsWith("0.") == true) {
-					resetValues(null);
-					Log.d("listen2PGS", "Reseting values!");
-				}
-			}
-		}
-		else
-			Log.d("listen2PGS", "Location is null.");
-	}
-	
-    public void resetValues(View v) {
-    	mStepCount = 0;
-    	mDistanceNotifier.setDistance(mDistance = 0);
-    }
-    
-    /**
-     * Forwards distance values from DistanceNotifier to the activity. 
-     */
-    private Listener mDistanceListener = new Listener() {
-        public void valueChanged(double value) {
-            mDistance = value;
-            tview.setText("Steps: "+(mStepCount++)+" \tDistance: "+mDistance+" meters.");
-        }
-    };
-    
-    private void registerDetector() {
-        mSensor = mSensorManager.getDefaultSensor(
-            Sensor.TYPE_ACCELEROMETER);
-        mSensorManager.registerListener(mStepDetector,
-            mSensor,
-            SensorManager.SENSOR_DELAY_FASTEST);
-    }
-    
-    @Override
-    protected void onResume() {
-    	super.onResume();
-    	compass.startMagneticCompass();
-//    	compass.startGPSCompass();
-    }
-    
-    @Override
-    protected void onPause() {
-    	super.onPause();
-    	compass.stopMagneticCompass();
-//    	compass.stopGPSCompass();
-    }
-    
-    public boolean onCreateOptionsMenu(Menu menu) {
-	    super.onCreateOptionsMenu(menu);
-	    MenuInflater inflater = getMenuInflater();
-	    inflater.inflate(R.menu.menu, menu);
-	    
-	    return true;
-    }
-
-    public boolean onOptionsItemSelected(MenuItem item) {
-		if(item.getItemId() == R.id.exit_title) {
-			finish();
-			System.exit(0);
-			
-			return true;
-		}
-		return false;
     }
 }
-
-//CMJson cmj = new CMJson("");
-//cmj.route_geometry = new ArrayList<double[]>();
-//double[][] dpts = {
-//		{0,0},// 0
-//		{0,1},// 1
-//		{0,2},// 2
-//		{1,2},// 3
-//		{2,3} // 4
-//};
-//for(int i=0; i<dpts.length; i++)
-//	cmj.route_geometry.add(dpts[i]);
-//
-//cmj.route_instructions = new ArrayList<CMRouteInstruction>();
-//CMRouteInstruction temp = new CMRouteInstruction(null);
-//temp.instruction = "Head North from "+Arrays.toString(dpts[0]);
-//temp.position = 0;
-//temp.length = 20;
-//cmj.route_instructions.add(temp);
-//
-//temp = new CMRouteInstruction(null);
-//temp.instruction = "Turn Right @90 Degrees on "+Arrays.toString(dpts[2]);
-//temp.position = 2;
-//temp.length = 10;
-//temp.turn_angle = 90; 
-//cmj.route_instructions.add(temp);
-//
-//temp = new CMRouteInstruction(null);
-//temp.instruction = "Turn Left @45 Degrees on "+Arrays.toString(dpts[3]);
-//temp.position = 3;
-//temp.length = Math.sqrt(2)*100;
-//temp.turn_angle = 45;
-//cmj.route_instructions.add(temp);
-
-//        // Quadrant 1
-//        double[][] line = {{0,0}, {0,1}};
-//        System.out.println("vec1: " + Arrays.deepToString(line) 
-//        		+ ",\t angle: " + calcTrueNorth(line));
-//        
-//        line = new double[][] {{0,0}, {1,Math.sqrt(3)}};
-//        System.out.println("vec1: " + Arrays.deepToString(line) 
-//        		+ ",\t angle: " + calcTrueNorth(line));
-//        
-//        line = new double[][] {{0,0}, {1,1}};
-//        System.out.println("vec1: " + Arrays.deepToString(line) 
-//        		+ ",\t angle: " + calcTrueNorth(line));
-//        
-//        line = new double[][] {{0,0}, {Math.sqrt(3), 1}};
-//        System.out.println("vec1: " + Arrays.deepToString(line) 
-//        		+ ",\t angle: " + calcTrueNorth(line));
-//        
-//        // Quadrant 4
-//        line = new double[][] {{0,0}, {1,0}};
-//        System.out.println("vec1: " + Arrays.deepToString(line) 
-//        		+ ",\t angle: " + calcTrueNorth(line));
-//        
-//        line = new double[][] {{0,0}, {Math.sqrt(3),-1}};
-//        System.out.println("vec1: " + Arrays.deepToString(line) 
-//        		+ ",\t angle: " + calcTrueNorth(line));
-//        
-//        line = new double[][] {{0,0}, {1,-1}};
-//        System.out.println("vec1: " + Arrays.deepToString(line) 
-//        		+ ",\t angle: " + calcTrueNorth(line));
-// 
-//        line = new double[][] {{0,0}, {1,-Math.sqrt(3)}};
-//        System.out.println("vec1: " + Arrays.deepToString(line) 
-//        		+ ",\t angle: " + calcTrueNorth(line));
-//        
-//        // Quadrant 3
-//        line = new double[][] {{0,0}, {0,-1}};
-//        System.out.println("vec1: " + Arrays.deepToString(line) 
-//        		+ ",\t angle: " + calcTrueNorth(line));
-//        
-//        line = new double[][] {{0,0}, {-1, -Math.sqrt(3)}};
-//        System.out.println("vec1: " + Arrays.deepToString(line) 
-//        		+ ",\t angle: " + calcTrueNorth(line));
-//        
-//        line = new double[][] {{0,0}, {-1,-1}};
-//        System.out.println("vec1: " + Arrays.deepToString(line) 
-//        		+ ",\t angle: " + calcTrueNorth(line));
-// 
-//        line = new double[][] {{0,0}, {-Math.sqrt(3),-1}};
-//        System.out.println("vec1: " + Arrays.deepToString(line) 
-//        		+ ",\t angle: " + calcTrueNorth(line));
-//        
-//        // Quadrant 2
-//        line = new double[][] {{0,0}, {-1,0}};
-//        System.out.println("vec1: " + Arrays.deepToString(line) 
-//        		+ ",\t angle: " + calcTrueNorth(line));
-//        
-//        line = new double[][] {{0,0}, {-Math.sqrt(3),1}};
-//        System.out.println("vec1: " + Arrays.deepToString(line) 
-//        		+ ",\t angle: " + calcTrueNorth(line));
-//        
-//        line = new double[][] {{0,0}, {-1,1}};
-//        System.out.println("vec1: " + Arrays.deepToString(line) 
-//        		+ ",\t angle: " + calcTrueNorth(line));
-// 
-//        line = new double[][] {{0,0}, {-1,Math.sqrt(3)}};
-//        System.out.println("vec1: " + Arrays.deepToString(line) 
-//        		+ ",\t angle: " + calcTrueNorth(line));

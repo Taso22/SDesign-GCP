@@ -479,4 +479,74 @@ public class Navigation {
 			return true;
 		}
 	}
+	
+	public void debugCalcTrueNorth() {
+      // Quadrant 1
+      double[][] line = {{0,0}, {0,1}};
+      System.out.println("vec1: " + Arrays.deepToString(line) 
+      		+ ",\t angle: " + calcTrueNorth(line));
+      
+      line = new double[][] {{0,0}, {1,Math.sqrt(3)}};
+      System.out.println("vec1: " + Arrays.deepToString(line) 
+      		+ ",\t angle: " + calcTrueNorth(line));
+      
+      line = new double[][] {{0,0}, {1,1}};
+      System.out.println("vec1: " + Arrays.deepToString(line) 
+      		+ ",\t angle: " + calcTrueNorth(line));
+      
+      line = new double[][] {{0,0}, {Math.sqrt(3), 1}};
+      System.out.println("vec1: " + Arrays.deepToString(line) 
+      		+ ",\t angle: " + calcTrueNorth(line));
+      
+      // Quadrant 4
+      line = new double[][] {{0,0}, {1,0}};
+      System.out.println("vec1: " + Arrays.deepToString(line) 
+      		+ ",\t angle: " + calcTrueNorth(line));
+      
+      line = new double[][] {{0,0}, {Math.sqrt(3),-1}};
+      System.out.println("vec1: " + Arrays.deepToString(line) 
+      		+ ",\t angle: " + calcTrueNorth(line));
+      
+      line = new double[][] {{0,0}, {1,-1}};
+      System.out.println("vec1: " + Arrays.deepToString(line) 
+      		+ ",\t angle: " + calcTrueNorth(line));
+
+      line = new double[][] {{0,0}, {1,-Math.sqrt(3)}};
+      System.out.println("vec1: " + Arrays.deepToString(line) 
+      		+ ",\t angle: " + calcTrueNorth(line));
+      
+      // Quadrant 3
+      line = new double[][] {{0,0}, {0,-1}};
+      System.out.println("vec1: " + Arrays.deepToString(line) 
+      		+ ",\t angle: " + calcTrueNorth(line));
+      
+      line = new double[][] {{0,0}, {-1, -Math.sqrt(3)}};
+      System.out.println("vec1: " + Arrays.deepToString(line) 
+      		+ ",\t angle: " + calcTrueNorth(line));
+      
+      line = new double[][] {{0,0}, {-1,-1}};
+      System.out.println("vec1: " + Arrays.deepToString(line) 
+      		+ ",\t angle: " + calcTrueNorth(line));
+
+      line = new double[][] {{0,0}, {-Math.sqrt(3),-1}};
+      System.out.println("vec1: " + Arrays.deepToString(line) 
+      		+ ",\t angle: " + calcTrueNorth(line));
+      
+      // Quadrant 2
+      line = new double[][] {{0,0}, {-1,0}};
+      System.out.println("vec1: " + Arrays.deepToString(line) 
+      		+ ",\t angle: " + calcTrueNorth(line));
+      
+      line = new double[][] {{0,0}, {-Math.sqrt(3),1}};
+      System.out.println("vec1: " + Arrays.deepToString(line) 
+      		+ ",\t angle: " + calcTrueNorth(line));
+      
+      line = new double[][] {{0,0}, {-1,1}};
+      System.out.println("vec1: " + Arrays.deepToString(line) 
+      		+ ",\t angle: " + calcTrueNorth(line));
+
+      line = new double[][] {{0,0}, {-1,Math.sqrt(3)}};
+      System.out.println("vec1: " + Arrays.deepToString(line) 
+      		+ ",\t angle: " + calcTrueNorth(line));
+	}
 }
