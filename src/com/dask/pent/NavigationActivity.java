@@ -3,11 +3,13 @@ package com.dask.pent;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Locale;
 
 import org.apache.http.client.ClientProtocolException;
 
 import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
 import android.hardware.Sensor;
 import android.hardware.SensorManager;
 import android.location.Location;
@@ -16,6 +18,8 @@ import android.location.LocationManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.speech.tts.TextToSpeech;
+import android.speech.tts.TextToSpeech.OnInitListener;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -42,6 +46,8 @@ public class NavigationActivity extends Activity {
 	private long refreshS = 0;
 	private long refreshE = 0;
 	private long delay = 1000;
+	private long DELAY_STREET_CROSSING = 2000;
+	private long DELAY_NORMAL = 1000;
 	
 	private int naviS = 0;
 	private int GPSBearing = 0;
@@ -61,6 +67,7 @@ public class NavigationActivity extends Activity {
 	DistanceNotifier mDistanceNotifier;
 	
 	TextView tview;
+	private TTS mTts;
 	
     /** Called when the activity is first created. */
     @Override
@@ -106,6 +113,8 @@ public class NavigationActivity extends Activity {
 
         };        
         
+        mTts = new TTS(getBaseContext());
+        
         GCManager = new Geocoding();
         try {
         	CMManager = new CloudMade(
@@ -128,6 +137,11 @@ public class NavigationActivity extends Activity {
             
 //        debugger();
         LM.requestLocationUpdates(LocationManager.GPS_PROVIDER,0,0,listen2GPS);
+        
+        String myText1 = "Did you sleep well?";
+        String myText2 = "I hope so, because it's time to wake up.";
+        mTts.speak(myText1);
+        mTts.speak(myText2);
     }
 
     LocationListener listen2GPS = new LocationListener() {
@@ -135,6 +149,7 @@ public class NavigationActivity extends Activity {
 		public void onProviderEnabled(String provider) {}
 		public void onProviderDisabled(String provider) {}
 		public void onLocationChanged(Location location) {
+			
     		locChanged(location);
     	}
 	};
@@ -175,6 +190,8 @@ public class NavigationActivity extends Activity {
 							Double.parseDouble(Intent_dest[0]),
 							Double.parseDouble(Intent_dest[1])
 					});
+					
+					mTts.speak("Starting Navigation!");
 				} catch (IOException e) { e.printStackTrace(); }
 			}
 			else {
@@ -188,18 +205,42 @@ public class NavigationActivity extends Activity {
 				
 				Log.d("listen2PGS", Arrays.toString(res));
 				
+				// Get the current system time.
 				refreshE = System.currentTimeMillis();
+				
+				/* If there is not message to the user OR if the time since the
+				 * last update to the user is greater than the current delay
+				 * setting:
+				 */
 				if(refreshS == 0 || (refreshE-refreshS) > delay) {
+					/* Update the screen with the current output of the 
+					 * navigation algorithm, for debugging processes.
+					 */
 					tview.setText(Arrays.toString(res));
+					/* Feed the current route instruction to the user through
+					 * means of TTS.
+					 */
+					mTts.speak(res[1]);
+					
 					refreshS = System.currentTimeMillis();
 					
+					/* If the user is at a street crossing or the user has now
+					 * moved onto a new path on the route:
+					 */
 					if(res[1].startsWith("0.1"))
-						delay = 2000;
+						/* Keep the current instruction for the delay of street
+						 * crossings.
+						 */
+						delay = DELAY_STREET_CROSSING;
+					// Else the user is on a normal heading:
 					else
-						delay = 1000;
+						// Keep the current instruction for the normal delay.
+						delay = DELAY_NORMAL;
 				}
 				
+				// If the user has started on a new route:
 				if(res[0].startsWith("0.") == true) {
+					// Reset the pedometer values.
 					resetValues(null);
 					Log.d("listen2PGS", "Reseting values!");
 				}
@@ -321,4 +362,5 @@ public class NavigationActivity extends Activity {
     		locChanged(Loc);
     	}
     }
+
 }
