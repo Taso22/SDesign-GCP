@@ -25,7 +25,7 @@ import android.widget.TextView;
 
 import com.dask.pent.DistanceNotifier.Listener;
 
-public class FoundationActivity extends Activity {
+public class NavigationActivity extends Activity {
 	private CloudMade CMManager;
 	private Geocoding GCManager;
 	
@@ -158,6 +158,10 @@ public class FoundationActivity extends Activity {
 					Intent_start = new String[]{
 							"" + location.getLatitude(),
 							"" + location.getLongitude()};
+					
+					Intent_dest =  GCManager.geocodingGOOGLE(
+							"279-281 Convent Ave Manhattan, NY 10031");
+							//"1518 Amsterdam Avenue, New York, NY");
 					
 					Log.d("listen2PGS", "Dest: "+Arrays.toString(Intent_dest));
 					
