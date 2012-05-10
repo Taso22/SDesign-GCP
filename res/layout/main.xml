@@ -10,4 +10,18 @@
         android:layout_height="wrap_content"
         android:text="@string/hello" />
 
+    <com.google.android.maps.MapView
+            android:id="@+id/mapView"
+            android:layout_width="fill_parent"
+            android:layout_height="fill_parent"
+            android:apiKey="03ZR1pR61Cc08vMZzzF3mWkH8H8_TMSoAmwHYSw"
+            android:clickable="true"
+            android:enabled="true" />
+    <LinearLayout
+            android:id="@+id/zoom"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="bottom"            
+            android:layout_gravity="center_horizontal" />
+    
 </LinearLayout>

@@ -3,6 +3,7 @@ package com.dask.pent;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Locale;
 
 import org.apache.http.client.ClientProtocolException;
@@ -10,6 +11,10 @@ import org.apache.http.client.ClientProtocolException;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
+import android.graphics.Point;
 import android.hardware.Sensor;
 import android.hardware.SensorManager;
 import android.location.Location;
@@ -25,11 +30,18 @@ import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.ViewGroup.LayoutParams;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import com.dask.pent.DistanceNotifier.Listener;
+import com.google.android.maps.GeoPoint;
+import com.google.android.maps.MapActivity;
+import com.google.android.maps.MapController;
+import com.google.android.maps.MapView;
+import com.google.android.maps.Overlay;
 
-public class NavigationActivity extends Activity {
+public class NavigationActivity extends MapActivity {
 	private CloudMade CMManager;
 	private Geocoding GCManager;
 	
@@ -46,8 +58,8 @@ public class NavigationActivity extends Activity {
 	private long refreshS = 0;
 	private long refreshE = 0;
 	private long delay = 1000;
-	private long DELAY_STREET_CROSSING = 2000;
-	private long DELAY_NORMAL = 1000;
+	private long DELAY_STREET_CROSSING = 7000;
+	private long DELAY_NORMAL = 5000;
 	
 	private int naviS = 0;
 	private int GPSBearing = 0;
@@ -68,9 +80,35 @@ public class NavigationActivity extends Activity {
 	
 	TextView tview;
 	private TTS mTts;
+	MapView mapView;
+	MapController mc;
+	GeoPoint p;
+	Geocoding gc = new Geocoding();
+	String[] coordinate;
+
+	class MapOverlay extends com.google.android.maps.Overlay
+    {
+        @Override
+        public boolean draw(Canvas canvas, MapView mapView, 
+        boolean shadow, long when) 
+        {
+            super.draw(canvas, mapView, shadow);                   
+ 
+            //---translate the GeoPoint to screen pixels---
+            Point screenPts = new Point();
+            mapView.getProjection().toPixels(p, screenPts);
+ 
+            //---add the marker---
+            Bitmap bmp = BitmapFactory.decodeResource(
+                getResources(), R.drawable.round_push_5);            
+            canvas.drawBitmap(bmp, screenPts.x, screenPts.y, null);         
+            return true;
+        }
+    } 
 	
     /** Called when the activity is first created. */
-    @Override
+    @SuppressWarnings("deprecation")
+	@Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.main);
@@ -99,7 +137,7 @@ public class NavigationActivity extends Activity {
         		case 1:
         			mBearingG[mGPSCount] = compass.getGPSBearing();
         			mGPSCount++;
-        			if(mGPSCount == 10) {
+        			if(mGPSCount == 3) {
         				mGPSCount = 0;
         				GPSBearing = 0;
         				for(int i=0; i<mBearingG.length; i++)
@@ -113,7 +151,40 @@ public class NavigationActivity extends Activity {
 
         };        
         
-        mTts = new TTS(getBaseContext());
+        mapView = (MapView) findViewById(R.id.mapView);
+        LinearLayout zoomLayout = (LinearLayout)findViewById(R.id.zoom);  
+        View zoomView = mapView.getZoomControls(); 
+ 
+        zoomLayout.addView(zoomView, 
+            new LinearLayout.LayoutParams(
+                LayoutParams.WRAP_CONTENT, 
+                LayoutParams.WRAP_CONTENT)); 
+        mapView.displayZoomControls(true);
+        
+     
+        mc = mapView.getController();
+        String coordinates[]={"40.82062" , "-73.95128"};
+        double lat = Double.parseDouble(coordinates[0]);
+        double lng = Double.parseDouble(coordinates[1]);
+        
+        // They need to be integer values, hence multiplication by million
+        p=new GeoPoint (
+        		(int) (lat * 1e6),
+        		(int) (lng * 1E6));
+        
+        mc.animateTo(p);
+        mc.setZoom(18);
+        
+        //---Add a location marker---
+        MapOverlay mapOverlay = new MapOverlay();
+        List<Overlay> listOfOverlays = mapView.getOverlays();
+        listOfOverlays.clear();
+        listOfOverlays.add(mapOverlay);  
+        
+        mapView.invalidate();
+        
+        
+        mTts = new TTS(this);
         
         GCManager = new Geocoding();
         try {
@@ -138,11 +209,33 @@ public class NavigationActivity extends Activity {
 //        debugger();
         LM.requestLocationUpdates(LocationManager.GPS_PROVIDER,0,0,listen2GPS);
         
-        String myText1 = "Did you sleep well?";
-        String myText2 = "I hope so, because it's time to wake up.";
-        mTts.speak(myText1);
-        mTts.speak(myText2);
+//        String myText1 = "Did you sleep well?";
+//        String myText2 = "I hope so, because it's time to wake up.";
+//        mTts.speak(myText1);
+//        mTts.speak(myText2);
     }
+    
+    private void displayPoint(String[] coordinate2) {
+    	double lat = Double.parseDouble(coordinate2[0]);
+        double lng = Double.parseDouble(coordinate2[1]);
+        
+        // They need to be integer values, hence multiplication by million
+        p=new GeoPoint (
+        		(int) (lat * 1e6),
+        		(int) (lng * 1E6));
+        
+        mc.animateTo(p);
+        mc.setZoom(18);
+        
+        //---Add a location marker---
+        MapOverlay mapOverlay = new MapOverlay();
+        List<Overlay> listOfOverlays = mapView.getOverlays();
+        listOfOverlays.clear();
+        listOfOverlays.add(mapOverlay);  
+        
+       // mapView.invalidate();
+		
+	}
 
     LocationListener listen2GPS = new LocationListener() {
 		public void onStatusChanged(String provider, int status, Bundle extras) {}
@@ -160,6 +253,8 @@ public class NavigationActivity extends Activity {
 				" mSteps: " + mStepCount);
 		
 		if(location != null) {
+			displayPoint(new String[]{
+					Double.toString(location.getLatitude()), Double.toString(location.getLongitude())});
 			if(naviS == 0) {
 				if(initCounter < 10) {
 					initCounter++;
@@ -175,7 +270,8 @@ public class NavigationActivity extends Activity {
 							"" + location.getLongitude()};
 					
 					Intent_dest =  GCManager.geocodingGOOGLE(
-							"279-281 Convent Ave Manhattan, NY 10031");
+							"420-422 W 144th St Manhattan, NY 10031");
+							//"279-281 Convent Ave Manhattan, NY 10031");
 							//"1518 Amsterdam Avenue, New York, NY");
 					
 					Log.d("listen2PGS", "Dest: "+Arrays.toString(Intent_dest));
@@ -295,6 +391,11 @@ public class NavigationActivity extends Activity {
 	    return true;
     }
 
+    public void onDestroy(){
+    	mTts.tts.shutdown();
+    	super.onDestroy();
+    }
+    
     public boolean onOptionsItemSelected(MenuItem item) {
 		if(item.getItemId() == R.id.exit_title) {
 			finish();
@@ -362,5 +463,11 @@ public class NavigationActivity extends Activity {
     		locChanged(Loc);
     	}
     }
+
+	@Override
+	protected boolean isRouteDisplayed() {
+		// TODO Auto-generated method stub
+		return false;
+	}
 
 }

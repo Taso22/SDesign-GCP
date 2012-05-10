@@ -19,6 +19,7 @@ public class TTS {
 				// unimplemented
 			}
 		});
+		tts.setLanguage(Locale.UK);
 	}
 
 	/**
@@ -26,14 +27,14 @@ public class TTS {
 	 * TextToSpeech speak method. 
 	 */
 	public void speak(String text){
-		while(tts.isSpeaking()){
-			try {
-				Thread.sleep(500);
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			}
-		}
-		tts.setLanguage(Locale.UK);
-		tts.speak(text, TextToSpeech.QUEUE_ADD, null);
+//		while(tts.isSpeaking()){
+//			tts.stop();
+////			try {
+////				Thread.sleep(500);
+////			} catch (InterruptedException e) {
+////				e.printStackTrace();
+////			}
+//		}
+		tts.speak(text, TextToSpeech.QUEUE_FLUSH, null);
 	}
 }

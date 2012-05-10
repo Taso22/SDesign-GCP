@@ -77,8 +77,8 @@ public class Navigation {
 				 * the user in within the range of the next node. */
 				if(indxPtNext == indxPtLast) {
 					res[0] = "0.0";
-					res[1] = "<***>Your destination will be reached in "
-							+ stateNext[3] + " meters.";
+					res[1] = "Your destination will be reached in "
+							+Integer.toString((int) stateNext[3]) + " meters.";
 					res[2] = "" + stateNext[3];
 					res[3] = "" + stateNext[5];
 					res[4] = "" + stateStray[5];
@@ -91,7 +91,7 @@ public class Navigation {
 					if(indxInstruct != -1)
 						res[1] = instructions.get(indxInstruct).instruction;
 					else
-						res[1] = "<***>Beware of street crossings!";
+						res[1] = "Beware of street crossings!";
 					
 					indxPtNext++;
 					pathAngle = calcPathAngle();
@@ -127,8 +127,8 @@ public class Navigation {
 				 * user is not within the range of the next node. */
 				if(stateEnd[0] == 1) {
 					res[0] = "1.0";
-					res[1] = "<***>Your destination will be reached in "
-							+ stateEnd[1] + " meters.";
+					res[1] = "Your destination will be reached in "
+							+Integer.toString((int) stateEnd[1]) + " meters.";
 					res[2] = "" + stateEnd[1];
 					res[3] = "";
 					res[4] = "";
@@ -138,8 +138,8 @@ public class Navigation {
 				 * within range of the next node. */
 				else if(stateStray[0] == 1) {
 					res[0] = "1.1";
-					res[1] = "<***>You have strayed from the route. " +
-							"Please turn " + stateStray[5] + " Degrees.";
+					res[1] = "You have strayed from the route. " +
+							"Please turn " +Integer.toString((int) stateStray[5]) + " Degrees.";
 					res[2] = "" + stateNext[3];
 					res[3] = "" + stateNext[5];
 					res[4] = "" + stateStray[5];
@@ -148,7 +148,7 @@ public class Navigation {
 				 * not within range of the next node. */
 				else {
 					res[0] = "1.2";
-					res[1] = "<***>Continue on for " + stateNext[3] +
+					res[1] = "Continue on for " +Integer.toString((int) stateNext[3]) +
 							" meters.";
 					res[2] = "" + stateNext[3];
 					res[3] = "" + stateNext[5];
