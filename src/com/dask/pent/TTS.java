@@ -19,7 +19,7 @@ public class TTS {
 				// unimplemented
 			}
 		});
-		tts.setLanguage(Locale.UK);
+		tts.setLanguage(Locale.US);
 	}
 
 	/**
