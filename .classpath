@@ -4,7 +4,7 @@
 	<classpathentry kind="src" path="gen"/>
 	<classpathentry kind="con" path="com.android.ide.eclipse.adt.ANDROID_FRAMEWORK"/>
 	<classpathentry kind="con" path="com.android.ide.eclipse.adt.LIBRARIES"/>
-	<classpathentry kind="lib" path="/home/pent/git/SDesign-GCP/gson-2.1.jar" sourcepath="/media/Storage/Windows/Eclipse/workspaces/Foundation/gson-2.1-sources.jar">
+	<classpathentry kind="lib" path="/home/pent/SDesign-GCP/gson-2.1.jar" sourcepath="/media/Storage/Windows/Eclipse/workspaces/Foundation/gson-2.1-sources.jar">
 		<attributes>
 			<attribute name="javadoc_location" value="file:/media/Storage/Windows/Eclipse/workspaces/Foundation/"/>
 		</attributes>

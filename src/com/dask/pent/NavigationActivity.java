@@ -4,16 +4,14 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Locale;
 
 import org.apache.http.client.ClientProtocolException;
 
-import android.app.Activity;
 import android.content.Context;
-import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
+import android.graphics.Paint;
 import android.graphics.Point;
 import android.hardware.Sensor;
 import android.hardware.SensorManager;
@@ -23,8 +21,6 @@ import android.location.LocationManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
-import android.speech.tts.TextToSpeech;
-import android.speech.tts.TextToSpeech.OnInitListener;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -80,11 +76,14 @@ public class NavigationActivity extends MapActivity {
 	
 	TextView tview;
 	private TTS mTts;
+	
 	MapView mapView;
 	MapController mc;
 	GeoPoint p;
 	Geocoding gc = new Geocoding();
 	String[] coordinate;
+	ArrayList<double[]> geo;
+	private List<Overlay> listOfOverlays;
 
 	class MapOverlay extends com.google.android.maps.Overlay
     {
@@ -102,6 +101,30 @@ public class NavigationActivity extends MapActivity {
             Bitmap bmp = BitmapFactory.decodeResource(
                 getResources(), R.drawable.round_push_5);            
             canvas.drawBitmap(bmp, screenPts.x, screenPts.y, null);         
+            return true;
+        }
+    } 
+	
+	class MapLine extends com.google.android.maps.Overlay
+    {
+        @Override
+        public boolean draw(Canvas canvas, MapView mapView, 
+        		boolean shadow, long when) 
+        {
+            super.draw(canvas, mapView, shadow);                   
+ 
+            //---translate the GeoPoint to screen pixels---
+            for(int i=0; i<geo.size()-1; i++) {
+	            Point screenPtsS = new Point();
+	            Point screenPtsE = new Point();
+	            GeoPoint gpS = new GeoPoint((int) (geo.get(i)[0]*1E6), (int) (geo.get(i)[1]*1E6));
+	            GeoPoint gpE = new GeoPoint((int) (geo.get(i+1)[0]*1E6), (int) (geo.get(i+1)[1]*1E6));
+	            mapView.getProjection().toPixels(gpS, screenPtsS);
+	            mapView.getProjection().toPixels(gpE, screenPtsE);
+	 
+	            //---add the marker---  
+	            canvas.drawLine(screenPtsS.x, screenPtsS.y, screenPtsE.x, screenPtsE.y, new Paint());
+            }
             return true;
         }
     } 
@@ -177,7 +200,7 @@ public class NavigationActivity extends MapActivity {
         
         //---Add a location marker---
         MapOverlay mapOverlay = new MapOverlay();
-        List<Overlay> listOfOverlays = mapView.getOverlays();
+        listOfOverlays = mapView.getOverlays();
         listOfOverlays.clear();
         listOfOverlays.add(mapOverlay);  
         
@@ -287,6 +310,10 @@ public class NavigationActivity extends MapActivity {
 							Double.parseDouble(Intent_dest[1])
 					});
 					
+					geo = cmjson.route_geometry;
+					MapLine lineOverlay = new MapLine();
+	        		listOfOverlays.add(lineOverlay);
+					
 					mTts.speak("Starting Navigation!");
 				} catch (IOException e) { e.printStackTrace(); }
 			}
@@ -308,7 +335,7 @@ public class NavigationActivity extends MapActivity {
 				 * last update to the user is greater than the current delay
 				 * setting:
 				 */
-				if(refreshS == 0 || (refreshE-refreshS) > delay) {
+				if(refreshS == 0 || (refreshE-refreshS) > delay || res[1].startsWith("0.1")) {
 					/* Update the screen with the current output of the 
 					 * navigation algorithm, for debugging processes.
 					 */
