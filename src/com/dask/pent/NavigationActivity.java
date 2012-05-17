@@ -84,6 +84,7 @@ public class NavigationActivity extends MapActivity {
 	String[] coordinate;
 	ArrayList<double[]> geo;
 	private List<Overlay> listOfOverlays;
+	private MapLine mapline;
 
 	class MapOverlay extends com.google.android.maps.Overlay
     {
@@ -254,7 +255,9 @@ public class NavigationActivity extends MapActivity {
         MapOverlay mapOverlay = new MapOverlay();
         List<Overlay> listOfOverlays = mapView.getOverlays();
         listOfOverlays.clear();
-        listOfOverlays.add(mapOverlay);  
+        listOfOverlays.add(mapOverlay);
+        mapline = new MapLine();
+		listOfOverlays.add(mapline);
         
        // mapView.invalidate();
 		
@@ -276,8 +279,6 @@ public class NavigationActivity extends MapActivity {
 				" mSteps: " + mStepCount);
 		
 		if(location != null) {
-			displayPoint(new String[]{
-					Double.toString(location.getLatitude()), Double.toString(location.getLongitude())});
 			if(naviS == 0) {
 				if(initCounter < 10) {
 					initCounter++;
@@ -293,7 +294,8 @@ public class NavigationActivity extends MapActivity {
 							"" + location.getLongitude()};
 					
 					Intent_dest =  GCManager.geocodingGOOGLE(
-							"420-422 W 144th St Manhattan, NY 10031");
+							//"420-422 W 144th St Manhattan, NY 10031");
+							"305 Convent Ave Manhattan, NY 10031");
 							//"279-281 Convent Ave Manhattan, NY 10031");
 							//"1518 Amsterdam Avenue, New York, NY");
 					
@@ -311,8 +313,8 @@ public class NavigationActivity extends MapActivity {
 					});
 					
 					geo = cmjson.route_geometry;
-					MapLine lineOverlay = new MapLine();
-	        		listOfOverlays.add(lineOverlay);
+					mapline = new MapLine();
+	        		listOfOverlays.add(mapline);
 					
 					mTts.speak("Starting Navigation!");
 				} catch (IOException e) { e.printStackTrace(); }
@@ -335,7 +337,7 @@ public class NavigationActivity extends MapActivity {
 				 * last update to the user is greater than the current delay
 				 * setting:
 				 */
-				if(refreshS == 0 || (refreshE-refreshS) > delay || res[1].startsWith("0.1")) {
+				if(refreshS == 0 || (refreshE-refreshS) > delay || res[0].startsWith("0.1") || res[0].startsWith("0.0")) {
 					/* Update the screen with the current output of the 
 					 * navigation algorithm, for debugging processes.
 					 */
@@ -350,7 +352,7 @@ public class NavigationActivity extends MapActivity {
 					/* If the user is at a street crossing or the user has now
 					 * moved onto a new path on the route:
 					 */
-					if(res[1].startsWith("0.1"))
+					if(res[0].startsWith("0.1"))
 						/* Keep the current instruction for the delay of street
 						 * crossings.
 						 */
@@ -368,6 +370,8 @@ public class NavigationActivity extends MapActivity {
 					Log.d("listen2PGS", "Reseting values!");
 				}
 			}
+			displayPoint(new String[]{
+					Double.toString(location.getLatitude()), Double.toString(location.getLongitude())});
 		}
 		else
 			Log.d("listen2PGS", "Location is null.");
