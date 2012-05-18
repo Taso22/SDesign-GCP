@@ -20,11 +20,12 @@ public class Navigation {
 	public double[] globalEnd;
 	
 	private int flagStart = 0;
+	public int LatLng = 1337;
 
-	private int indxPtStart;
-	private int indxPtCurr;
-	private int indxPtNext;
-	private int indxPtLast;
+	public int indxPtStart;
+	public int indxPtCurr;
+	public int indxPtNext;
+	public int indxPtLast;
 
 	private double distCurrNode2NextNode;
 	private int idealAngle;
@@ -183,10 +184,10 @@ public class Navigation {
 		pathAngle = calcPathAngle();
 
 		distCurrNode2NextNode = convert.distVincenty(
-				geometry.get(indxPtCurr)[0],
-				geometry.get(indxPtCurr)[1],
-				geometry.get(indxPtNext)[0],
-				geometry.get(indxPtNext)[1]);
+				geometry.get(indxPtCurr)[0],	// Latitude		= y1
+				geometry.get(indxPtCurr)[1],	// Longtitude	= x1
+				geometry.get(indxPtNext)[0],	// Latitude		= y2
+				geometry.get(indxPtNext)[1]);	// Longtitude	= x2
 
 		String[] res = {
 				"-1",
@@ -286,21 +287,26 @@ public class Navigation {
 
 	}
 
-	private double distancePoint2Point(double x, double y, double xx, double yy) {
-//		return convert.distVincenty(x, y, xx, yy);
-		return Math.sqrt(Math.pow(xx-x, 2) + Math.pow(yy-y, 2));
-	}
-	/* FUNCTIONS ADDED BY SAHL
-	 *
-	 *
-	 *
-	 *
-	 *
-	 *
-	 *
-	 *
-	 */
-	public static int angleL2L(double[][] line1, double[][] line2) {
+	public int angleL2L(double[][] line1, double[][] line2, int flag) {
+		// Swap the lat and lon for x and y.
+		if(flag == LatLng) {
+			double temp;
+			temp = line1[0][0];
+			line1[0][0] = line1[0][1];
+			line1[0][1] = temp;
+			
+			temp = line1[1][0];
+			line1[1][0] = line1 [1][1];
+			line1[1][1] = temp;
+			
+			temp = line2[0][0];
+			line2[0][0] = line2[0][1];
+			line2[0][1] = temp;
+			
+			temp = line2[1][0];
+			line2[1][0] = line2 [1][1];
+			line2[1][1] = temp;
+		}
 		double[] vec1 = {line1[1][0]-line1[0][0], line1[1][1]-line1[0][1]};
 		double[] vec2 = {line2[1][0]-line2[0][0], line2[1][1]-line2[0][1]};
 
@@ -315,7 +321,17 @@ public class Navigation {
 		return (int)Math.round(angle);
 	}
 
-	public int calcTrueNorth(double[][] line) {
+	public int calcTrueNorth(double[][] line, int flag) {
+		// Swap the lat and lon for x and y.
+		if(flag == LatLng) {
+			double temp = line[0][0];
+			line[0][0] = line [0][1];
+			line[0][1] = temp;
+			
+			temp = line[1][0];
+			line[1][0] = line [1][1];
+			line[1][1] = temp;
+		}
         double[][] north = {{0,0}, {0,1}}; // Fixed North
         double[] vec1 = {line[1][0] - line[0][0], line[1][1] - line[0][1]};
         double[] vec2 = {north[1][0] - north[0][0], north[1][1] - north[0][1]};
@@ -422,7 +438,9 @@ public class Navigation {
 			0,	// 1 = Distance to the global end.
 			};
 		
-		state[1] = convert.distVincenty(userPos[0], userPos[1], globalEnd[0], globalEnd[1]);
+		state[1] = convert.distVincenty(
+				userPos[0], userPos[1], 
+				globalEnd[0], globalEnd[1]);
 		
 		if(state[1] <= threshold_pt)
 			state[0] = 1;
@@ -435,7 +453,7 @@ public class Navigation {
 	public int calcPathAngle() {
 		return calcTrueNorth(new double[][] {
 				{geometry.get(indxPtCurr)[0], geometry.get(indxPtCurr)[1]},
-				{geometry.get(indxPtNext)[0], geometry.get(indxPtNext)[1]}});
+				{geometry.get(indxPtNext)[0], geometry.get(indxPtNext)[1]}}, LatLng);
 	}
 
 	public int calculateIdealAngle() {
@@ -443,7 +461,7 @@ public class Navigation {
 			double[][] curr2next = {geometry.get(indxPtCurr), geometry.get(indxPtNext)}; //Line from Current Position to next Node
 			double[][] next2nextTwo = {geometry.get(indxPtNext),geometry.get(indxPtNext+1)}; //Line from Next Node to Node + 1
 
-			return angleL2L(curr2next,next2nextTwo);
+			return angleL2L(curr2next,next2nextTwo, LatLng);
 		}
 		else
 			return 9001;
@@ -454,7 +472,7 @@ public class Navigation {
 			double[][] curr2user = {geometry.get(indxPtCurr), user_pos}; //Line from user Position to next node + 1
 			double[][] user2nextTwo = {user_pos, geometry.get(indxPtNext+1)}; //Line from user position to Node + 1
 
-			return angleL2L(curr2user, user2nextTwo);
+			return angleL2L(curr2user, user2nextTwo, LatLng);
 		}
 		else
 			return 0;
@@ -466,8 +484,8 @@ public class Navigation {
 		double[][] next2nextTwo = {geometry.get(indxPtNext),geometry.get(indxPtNext+1)}; //Line from Next Node to Node + 1
 		double[][] curr2nextTwo = {curr_pos,geometry.get(indxPtNext+1)}; //Line from Current Position to next node + 1
 
-		int angleCurr2NextTwo = angleL2L(curr2next,curr2nextTwo);
-		int angleNext2NextTwo = angleL2L(curr2next,next2nextTwo);
+		int angleCurr2NextTwo = angleL2L(curr2next,curr2nextTwo, LatLng);
+		int angleNext2NextTwo = angleL2L(curr2next,next2nextTwo, LatLng);
 
 		System.out.println("The Current Angle is: " + (angleCurr2NextTwo));
 		System.out.println("The angle between next node and next node + 1 is: " + angleNext2NextTwo);
@@ -484,69 +502,69 @@ public class Navigation {
       // Quadrant 1
       double[][] line = {{0,0}, {0,1}};
       System.out.println("vec1: " + Arrays.deepToString(line) 
-      		+ ",\t angle: " + calcTrueNorth(line));
+      		+ ",\t angle: " + calcTrueNorth(line, 0));
       
       line = new double[][] {{0,0}, {1,Math.sqrt(3)}};
       System.out.println("vec1: " + Arrays.deepToString(line) 
-      		+ ",\t angle: " + calcTrueNorth(line));
+      		+ ",\t angle: " + calcTrueNorth(line, 0));
       
       line = new double[][] {{0,0}, {1,1}};
       System.out.println("vec1: " + Arrays.deepToString(line) 
-      		+ ",\t angle: " + calcTrueNorth(line));
+      		+ ",\t angle: " + calcTrueNorth(line, 0));
       
       line = new double[][] {{0,0}, {Math.sqrt(3), 1}};
       System.out.println("vec1: " + Arrays.deepToString(line) 
-      		+ ",\t angle: " + calcTrueNorth(line));
+      		+ ",\t angle: " + calcTrueNorth(line, 0));
       
       // Quadrant 4
       line = new double[][] {{0,0}, {1,0}};
       System.out.println("vec1: " + Arrays.deepToString(line) 
-      		+ ",\t angle: " + calcTrueNorth(line));
+      		+ ",\t angle: " + calcTrueNorth(line, 0));
       
       line = new double[][] {{0,0}, {Math.sqrt(3),-1}};
       System.out.println("vec1: " + Arrays.deepToString(line) 
-      		+ ",\t angle: " + calcTrueNorth(line));
+      		+ ",\t angle: " + calcTrueNorth(line, 0));
       
       line = new double[][] {{0,0}, {1,-1}};
       System.out.println("vec1: " + Arrays.deepToString(line) 
-      		+ ",\t angle: " + calcTrueNorth(line));
+      		+ ",\t angle: " + calcTrueNorth(line, 0));
 
       line = new double[][] {{0,0}, {1,-Math.sqrt(3)}};
       System.out.println("vec1: " + Arrays.deepToString(line) 
-      		+ ",\t angle: " + calcTrueNorth(line));
+      		+ ",\t angle: " + calcTrueNorth(line, 0));
       
       // Quadrant 3
       line = new double[][] {{0,0}, {0,-1}};
       System.out.println("vec1: " + Arrays.deepToString(line) 
-      		+ ",\t angle: " + calcTrueNorth(line));
+      		+ ",\t angle: " + calcTrueNorth(line, 0));
       
       line = new double[][] {{0,0}, {-1, -Math.sqrt(3)}};
       System.out.println("vec1: " + Arrays.deepToString(line) 
-      		+ ",\t angle: " + calcTrueNorth(line));
+      		+ ",\t angle: " + calcTrueNorth(line, 0));
       
       line = new double[][] {{0,0}, {-1,-1}};
       System.out.println("vec1: " + Arrays.deepToString(line) 
-      		+ ",\t angle: " + calcTrueNorth(line));
+      		+ ",\t angle: " + calcTrueNorth(line, 0));
 
       line = new double[][] {{0,0}, {-Math.sqrt(3),-1}};
       System.out.println("vec1: " + Arrays.deepToString(line) 
-      		+ ",\t angle: " + calcTrueNorth(line));
+      		+ ",\t angle: " + calcTrueNorth(line, 0));
       
       // Quadrant 2
       line = new double[][] {{0,0}, {-1,0}};
       System.out.println("vec1: " + Arrays.deepToString(line) 
-      		+ ",\t angle: " + calcTrueNorth(line));
+      		+ ",\t angle: " + calcTrueNorth(line, 0));
       
       line = new double[][] {{0,0}, {-Math.sqrt(3),1}};
       System.out.println("vec1: " + Arrays.deepToString(line) 
-      		+ ",\t angle: " + calcTrueNorth(line));
+      		+ ",\t angle: " + calcTrueNorth(line, 0));
       
       line = new double[][] {{0,0}, {-1,1}};
       System.out.println("vec1: " + Arrays.deepToString(line) 
-      		+ ",\t angle: " + calcTrueNorth(line));
+      		+ ",\t angle: " + calcTrueNorth(line, 0));
 
       line = new double[][] {{0,0}, {-1,Math.sqrt(3)}};
       System.out.println("vec1: " + Arrays.deepToString(line) 
-      		+ ",\t angle: " + calcTrueNorth(line));
+      		+ ",\t angle: " + calcTrueNorth(line, 0));
 	}
 }

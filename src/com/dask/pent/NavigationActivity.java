@@ -44,7 +44,7 @@ public class NavigationActivity extends MapActivity {
 	private Compass compass;
 	public Handler handler;
 	
-	private Navigation navi;
+	private Navigation navi = null;
 	
 	String[] Intent_start;
 	String[] Intent_dest;
@@ -146,17 +146,31 @@ public class NavigationActivity extends MapActivity {
         		super.handleMessage(msg);
         		switch(msg.arg1){
         		case 0:
-        			mBearingM[mMagnetCount] = compass.getMagDir();
-        			mMagnetCount++;
-        			if(mMagnetCount == 10) {
-        				mMagnetCount = 0;
-        				magneticBearing = 0;
-        				for(int i=0; i<mBearingM.length; i++)
-        					magneticBearing += mBearingM[i];
-        				magneticBearing = magneticBearing/mBearingM.length;
-        				Log.i("handler","Notified that sensor changed, MAG: "+magneticBearing);
-        				
+        			magneticBearing = compass.getMagDir();
+        			if(navi != null) {
+        				Log.d("compass test", Arrays.toString(new int[]{navi.indxPtCurr, navi.indxPtNext}));
+        				int tn = navi.calcTrueNorth(new double[][] {
+        								{navi.geometry.get(navi.indxPtCurr)[0], navi.geometry.get(navi.indxPtCurr)[1]},
+        								{navi.geometry.get(navi.indxPtNext)[0], navi.geometry.get(navi.indxPtNext)[1]}}, navi.LatLng);
+//        						calcTrueNorth(new double[][] {
+//        						{40.694031, -73.864777},//{40.694114,-73.864807},
+//        						{40.69375620, -73.86624470}}, navi.LatLng);
+	        			int patha = navi.calcPathAngle();
+	    	    		int stray = navi.calcDeviAngle(magneticBearing);
+	    	    		tview.setText("Mag: " + magneticBearing + " \tDev: " + stray);
+	    	    		Log.d("Compass Test", tn+ " path: " + patha + " Mag: " + magneticBearing + " \tDev: " + stray);
         			}
+//        			mBearingM[mMagnetCount] = compass.getMagDir();
+//        			mMagnetCount++;
+//        			if(mMagnetCount == 10) {
+//        				mMagnetCount = 0;
+//        				magneticBearing = 0;
+//        				for(int i=0; i<mBearingM.length; i++)
+//        					magneticBearing += mBearingM[i];
+//        				magneticBearing = magneticBearing/mBearingM.length;
+////        				Log.i("handler","Notified that sensor changed, MAG: "+magneticBearing);
+//        				
+//        			}
         			break;
         		case 1:
         			mBearingG[mGPSCount] = compass.getGPSBearing();
@@ -167,7 +181,7 @@ public class NavigationActivity extends MapActivity {
         				for(int i=0; i<mBearingG.length; i++)
         					GPSBearing += mBearingG[i];
         				GPSBearing = GPSBearing/mBearingG.length;
-        				Log.i("handler","Notified that location changed, GPS: "+GPSBearing);
+//        				Log.i("handler","Notified that location changed, GPS: "+GPSBearing);
         			}
         			break;
         		}
@@ -222,6 +236,8 @@ public class NavigationActivity extends MapActivity {
         mSensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
         LocationManager LM = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
         compass = new Compass(LM, mSensorManager, handler);
+        compass.startMagneticCompass();
+//    	compass.startGPSCompass();
         
         mStepDetector = new StepDetector();
         registerDetector();        
@@ -231,12 +247,9 @@ public class NavigationActivity extends MapActivity {
         mStepDetector.addStepListener(mDistanceNotifier);
             
 //        debugger();
-        LM.requestLocationUpdates(LocationManager.GPS_PROVIDER,0,0,listen2GPS);
+        debug_compass();
+//        LM.requestLocationUpdates(LocationManager.GPS_PROVIDER,0,0,listen2GPS);
         
-//        String myText1 = "Did you sleep well?";
-//        String myText2 = "I hope so, because it's time to wake up.";
-//        mTts.speak(myText1);
-//        mTts.speak(myText2);
     }
     
     private void displayPoint(String[] coordinate2) {
@@ -280,10 +293,10 @@ public class NavigationActivity extends MapActivity {
 		
 		if(location != null) {
 			if(naviS == 0) {
-				if(initCounter < 10) {
-					initCounter++;
-					return;
-				}
+//				if(initCounter < 10) {
+//					initCounter++;
+//					return;
+//				}
 				try {
 					Log.d("listen2PGS", "Initializing Navigation");
 					naviS = 1;
@@ -294,8 +307,9 @@ public class NavigationActivity extends MapActivity {
 							"" + location.getLongitude()};
 					
 					Intent_dest =  GCManager.geocodingGOOGLE(
-							//"420-422 W 144th St Manhattan, NY 10031");
-							"305 Convent Ave Manhattan, NY 10031");
+							"76-1 85th Dr Woodhaven, NY 11421"); // Compass Test
+							//"420-422 W 144th St Manhattan, NY 10031"); // Burger King
+							//"305 Convent Ave Manhattan, NY 10031"); // After Church
 							//"279-281 Convent Ave Manhattan, NY 10031");
 							//"1518 Amsterdam Avenue, New York, NY");
 					
@@ -495,6 +509,36 @@ public class NavigationActivity extends MapActivity {
     	}
     }
 
+    public void debug_compass(){
+    	double[] startPT = {40.694114,-73.864807};
+    	
+    	Location startLOC = new Location("");
+    	startLOC.setLatitude(startPT[0]);
+    	startLOC.setLongitude(startPT[1]);
+    	
+    	locChanged(startLOC);
+//    	int patha = navi.calcPathAngle();
+//    	
+//    	double[] currPT = {40.6942, -73.864351};
+//    	
+//    	int stray;
+//    	int mag = magneticBearing;
+//    	delay = 500;
+//    	int a = 1;
+//    	while(a == 1) {//for(int i=0; i<1000000; i++) {
+//    		refreshE = System.currentTimeMillis();
+//    		if(refreshS == 0 || (refreshE-refreshS) > delay) {
+//	    		refreshS = System.currentTimeMillis();
+//	    		
+//	    		mag = magneticBearing;
+//	    		patha = navi.calcPathAngle();
+//	    		stray = navi.calcDeviAngle(mag);
+//	    		tview.setText("Mag: " + mag + " \tDev: " + stray);
+//	    		Log.d("Compass Test", patha + "Mag: " + mag + " \tDev: " + stray);
+//    		}
+//    	}
+    }
+    
 	@Override
 	protected boolean isRouteDisplayed() {
 		// TODO Auto-generated method stub
