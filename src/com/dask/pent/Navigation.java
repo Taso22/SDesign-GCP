@@ -83,6 +83,7 @@ public class Navigation {
 					res[2] = "" + stateNext[3];
 					res[3] = "" + stateNext[5];
 					res[4] = "" + stateStray[5];
+					res[5] = "" + getSoundAngle(stateStray[5]);
 					flagStart = -1;
 				}
 				/* TODO 0.1 The next node is NOT the last node of the route
@@ -113,13 +114,15 @@ public class Navigation {
 						res[0] = "0.1.1";
 					}
 					
+					double dev = calcDeviAngle(userBearing);
 					res[2] = "" + convert.distVincenty(
 							userPos[0],
 							userPos[1],
 							geometry.get(indxPtNext)[0],
 							geometry.get(indxPtNext)[1]); //TODO change back to convert.dist
 					res[3] = "" + calculateUserAngle(userPos);
-					res[4] = "" + calcDeviAngle(userBearing);
+					res[4] = "" + dev;
+					res[5] = "" + getSoundAngle(dev);
 				}
 			}
 			/* TODO 1. The user is not within range of the next node. */
@@ -133,6 +136,7 @@ public class Navigation {
 					res[2] = "" + stateEnd[1];
 					res[3] = "";
 					res[4] = "";
+					res[5] = "" + getSoundAngle(stateStray[5]);
 					flagStart = -1;
 				}
 				/* TODO 1.1 The user is straying off path AND the user is not
@@ -144,6 +148,7 @@ public class Navigation {
 					res[2] = "" + stateNext[3];
 					res[3] = "" + stateNext[5];
 					res[4] = "" + stateStray[5];
+					res[5] = "" + getSoundAngle(stateStray[5]);
 				}
 				/* TODO 1.2 The user is not straying off path AND the user is
 				 * not within range of the next node. */
@@ -154,12 +159,13 @@ public class Navigation {
 					res[2] = "" + stateNext[3];
 					res[3] = "" + stateNext[5];
 					res[4] = "" + stateStray[5];
+					res[5] = "" + getSoundAngle(stateStray[5]);
 				}	
 			}
 
 			Log.d("Navigation.Navigation", "Exiting 'Navigate()' @"
 					+ res[0] + " w/ usr*= " + res[3]
-					+ ", dev*= "+res[4]);
+					+ ", Sdev*= "+res[5]);
 		}
 		return res;
 	}
@@ -477,6 +483,13 @@ public class Navigation {
 		}
 		else
 			return 0;
+	}
+	
+	public double getSoundAngle(double stateStray) {
+		if(stateStray > 0)
+			return 360 - stateStray;
+		else
+			return Math.abs(stateStray);
 	}
 
 	public boolean thresholdAngle(double[] curr_pos)
