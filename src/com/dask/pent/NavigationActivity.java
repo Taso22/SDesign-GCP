@@ -148,17 +148,10 @@ public class NavigationActivity extends MapActivity {
         		case 0:
         			magneticBearing = compass.getMagDir();
         			if(navi != null) {
-        				Log.d("compass test", Arrays.toString(new int[]{navi.indxPtCurr, navi.indxPtNext}));
-        				int tn = navi.calcTrueNorth(new double[][] {
-        								{navi.geometry.get(navi.indxPtCurr)[0], navi.geometry.get(navi.indxPtCurr)[1]},
-        								{navi.geometry.get(navi.indxPtNext)[0], navi.geometry.get(navi.indxPtNext)[1]}}, navi.LatLng);
-//        						calcTrueNorth(new double[][] {
-//        						{40.694031, -73.864777},//{40.694114,-73.864807},
-//        						{40.69375620, -73.86624470}}, navi.LatLng);
 	        			int patha = navi.calcPathAngle();
 	    	    		int stray = navi.calcDeviAngle(magneticBearing);
 	    	    		tview.setText("Mag: " + magneticBearing + " \tDev: " + stray);
-	    	    		Log.d("Compass Test", tn+ " path: " + patha + " Mag: " + magneticBearing + " \tDev: " + stray);
+	    	    		Log.d("Compass Test","Path: " + patha + " Mag: " + magneticBearing + " \tDev: " + stray);
         			}
 //        			mBearingM[mMagnetCount] = compass.getMagDir();
 //        			mMagnetCount++;
@@ -325,7 +318,7 @@ public class NavigationActivity extends MapActivity {
 							Double.parseDouble(Intent_dest[0]),
 							Double.parseDouble(Intent_dest[1])
 					});
-					
+//					Log.d("compass test", Arrays.toString(new int[]{navi.indxPtCurr, navi.indxPtNext}));
 					geo = cmjson.route_geometry;
 					mapline = new MapLine();
 	        		listOfOverlays.add(mapline);
@@ -517,6 +510,7 @@ public class NavigationActivity extends MapActivity {
     	startLOC.setLongitude(startPT[1]);
     	
     	locChanged(startLOC);
+    	navi.Navigate(startPT, 0, 0);
 //    	int patha = navi.calcPathAngle();
 //    	
 //    	double[] currPT = {40.6942, -73.864351};

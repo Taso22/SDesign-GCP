@@ -348,8 +348,9 @@ public class Navigation {
 			turn = 1;
 		else
 			turn = -1;
-
-		return Math.abs(phi);
+		
+		//return Math.abs(phi);
+		return theta;
 	}
 
 	public double[] choose2NextNode(double[] userPos, double steps) {
