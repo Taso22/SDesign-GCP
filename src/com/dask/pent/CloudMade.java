@@ -15,6 +15,8 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.util.ByteArrayBuffer;
 
+import android.util.Log;
+
 /**
  * @author Kevin R.
  *
@@ -62,11 +64,12 @@ public class CloudMade {
     	String url = "http://navigation.cloudmade.com/"+APIkey+"/api/latest/" +
     				 start[0]+","+start[1]+","+end[0]+","+end[1]+"/"+rtype+"." +
     				 format+"?tId="+tID+"&token="+token;
+    	Log.d("park lane", url);
     	httpget = new HttpGet(url);
     	
     	httpres = httpclient.execute(httpget);
     	String directions = responseToString(httpres);
-    	
+    	Log.d("park lane", directions);
     	return new CMJson(directions);
     }
         

@@ -49,10 +49,11 @@ public class Navigation {
 				"Instruction",
 				"distance",
 				"Angle",
-				"Deviation"};
+				"Deviation",
+				"Play Sound Angle"};
 
 		if(flagStart == 0)
-			return startNavigate(userPos);
+			return startNavigate(userPos, userBearing);
 		else if(flagStart == 1) {
 			Log.d("Navigation.Navigation", "Starting 'Navigate()' w/ "
 					+ Arrays.toString(userPos)
@@ -170,7 +171,7 @@ public class Navigation {
 		return res;
 	}
 
-	private String[] startNavigate(double[] currPosition) {
+	private String[] startNavigate(double[] currPosition, int userbearing) {
 		Log.d("Navigation.startNavigate", "Starting 'startNavigate()' w/ " + 
 				Arrays.toString(currPosition));
 
@@ -200,7 +201,8 @@ public class Navigation {
 				instructions.get(0).instruction,
 				""+distCurrNode2NextNode,
 				""+calculateUserAngle(currPosition),
-				""+pathAngle};
+				""+pathAngle,
+				""+getSoundAngle(calcDeviAngle(userbearing))};
 
 		Log.d("Navigation.startNavigate", "Exiting 'startNavigate()' @" + 
 				res[0] + " w/ " + res[2]);
@@ -272,7 +274,7 @@ public class Navigation {
 		};
 		
 		
-		String[] res = startNavigate(pts[0]);
+		String[] res = startNavigate(pts[0], 0);
 		System.out.println(getState()+"\n"+res[1]+"\n==========================================================");
 
 		System.out.println("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^");
@@ -424,7 +426,8 @@ public class Navigation {
 			state[1]++;
 			state[2] = 1;
 		}
-		if((state[5] >= 75 && state[5] <= 105)){
+		if((Math.abs(state[5]) >= 75 && Math.abs(state[5]) <= 105) ||
+				(Math.abs(state[5]) >= 165 && Math.abs(state[5]) <= 195)){
 			state[1]++;
 			state[4] = 1;
 		}
@@ -486,10 +489,11 @@ public class Navigation {
 	}
 	
 	public double getSoundAngle(double stateStray) {
-		if(stateStray > 0)
-			return 360 - stateStray;
-		else
-			return Math.abs(stateStray);
+		return -1*stateStray;
+//		if(stateStray > 0)
+//			return 360 - stateStray;
+//		else
+//			return Math.abs(stateStray);
 	}
 
 	public boolean thresholdAngle(double[] curr_pos)

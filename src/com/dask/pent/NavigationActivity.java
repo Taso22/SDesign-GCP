@@ -40,6 +40,7 @@ import com.google.android.maps.Overlay;
 public class NavigationActivity extends MapActivity {
 	private CloudMade CMManager;
 	private Geocoding GCManager;
+	private LocationManager LM;
 	
 	private Compass compass;
 	public Handler handler;
@@ -221,7 +222,7 @@ public class NavigationActivity extends MapActivity {
         } catch (IOException e) { e.printStackTrace(); }       
         
         mSensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
-        LocationManager LM = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+        LM = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
         compass = new Compass(LM, mSensorManager, handler);
         compass.startMagneticCompass();
 //    	compass.startGPSCompass();
@@ -294,9 +295,10 @@ public class NavigationActivity extends MapActivity {
 							"" + location.getLongitude()};
 					
 					Intent_dest =  GCManager.geocodingGOOGLE(
-							//"76-1 85th Dr Woodhaven, NY 11421"); // Compass Test
+							//"85-5 79th St Woodhaven, NY 11421"); // park lane
+							"76-1 85th Dr Woodhaven, NY 11421"); // Compass Test
 							//"420-422 W 144th St Manhattan, NY 10031"); // Burger King
-							"305 Convent Ave Manhattan, NY 10031"); // After Church
+							//"305 Convent Ave Manhattan, NY 10031"); // After Church
 							//"279-281 Convent Ave Manhattan, NY 10031");
 							//"1518 Amsterdam Avenue, New York, NY");
 					
@@ -326,10 +328,19 @@ public class NavigationActivity extends MapActivity {
 						location.getLongitude()};
 				String[] res = navi.Navigate(
 						pt, 
-						GPSBearing, 
+						magneticBearing, 
 						mStepCount);
 				
 				Log.d("listen2PGS", Arrays.toString(res));
+				/* Update the screen with the current output of the 
+				 * navigation algorithm, for debugging processes.
+				 */
+				if (res[5].startsWith("-")) {
+					tview.setText("Turn left for " + res[5] + " degrees.");
+				}
+				else
+					tview.setText("Turn Right for " + res[5] + " degrees.");
+				
 				
 				// Get the current system time.
 				refreshE = System.currentTimeMillis();
@@ -338,11 +349,7 @@ public class NavigationActivity extends MapActivity {
 				 * last update to the user is greater than the current delay
 				 * setting:
 				 */
-				if(refreshS == 0 || (refreshE-refreshS) > delay || res[0].startsWith("0.1") || res[0].startsWith("0.0")) {
-					/* Update the screen with the current output of the 
-					 * navigation algorithm, for debugging processes.
-					 */
-					tview.setText(Arrays.toString(res));
+				if(refreshS == 0 || (refreshE-refreshS) > delay || res[0].startsWith("0.1") || res[0].startsWith("0.0") || res[0].startsWith("1.0")) {
 					/* Feed the current route instruction to the user through
 					 * means of TTS.
 					 */
@@ -362,6 +369,14 @@ public class NavigationActivity extends MapActivity {
 					else
 						// Keep the current instruction for the normal delay.
 						delay = DELAY_NORMAL;
+					
+					if(res[0].startsWith("1.0")) {
+						LM.removeUpdates(listen2GPS);
+						naviS = 0;
+						initCounter = 0;
+						resetValues(null);
+						Log.d("listen2PGS", "Reseting values!");
+					}
 				}
 				
 				// If the user has started on a new route:
